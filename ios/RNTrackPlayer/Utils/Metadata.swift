@@ -35,16 +35,30 @@ struct Metadata {
         if let elapsedTime = metadata["elapsedTime"] as? Double {
             ret.append(NowPlayingInfoProperty.elapsedPlaybackTime(elapsedTime))
         }
-        
-        player.nowPlayingInfoController.set(keyValues: ret)
-        
+
+        ret.forEach { (keyValue) in
+            let key = try? keyValue.getKey()
+            let value = try? keyValue.getValue()
+            
+            if (key != nil && value != nil) {
+                try? player.nowPlayingInfoController.set(keyValue: keyValue)
+            }
+        }
+
         if let artworkURL = MediaURL(object: metadata["artwork"]) {
             currentImageTask = URLSession.shared.dataTask(with: artworkURL.value, completionHandler: { [weak player] (data, _, error) in
                 if let data = data, let image = UIImage(data: data), error == nil {
                     let artwork = MPMediaItemArtwork(boundsSize: image.size, requestHandler: { (size) -> UIImage in
                         return image
                     })
-                    player?.nowPlayingInfoController.set(keyValue: MediaItemProperty.artwork(artwork))
+
+                    let artworkKeyValue = MediaItemProperty.artwork(artwork)
+                    let artworkKey = try? artworkKeyValue.getKey()
+                    let artworkValue = try? artworkKeyValue.getValue()
+
+                    if (artworkKeyValue != nil) {
+                        player?.nowPlayingInfoController.set(keyValue: artworkKeyValue)
+                    }
                 }
             })
             
